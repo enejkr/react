@@ -33,22 +33,28 @@ module.exports = {
     show: function (req, res) {
         var id = req.params.id;
 
-        PhotoModel.findOne({_id: id}, function (err, photo) {
-            if (err) {
-                return res.status(500).json({
-                    message: 'Error when getting photo.',
-                    error: err
-                });
-            }
+        PhotoModel.findOne({ _id: id })
+            .populate('postedBy')
+            .exec(function (err, photo) {
+                if (err) {
+                    return res.status(500).json({
+                        message: 'Error when getting photo.',
+                        error: err
+                    });
+                }
 
-            if (!photo) {
-                return res.status(404).json({
-                    message: 'No such photo'
-                });
-            }
+                if (!photo) {
+                    return res.status(404).json({
+                        message: 'No such photo'
+                    });
+                }
 
-            return res.json(photo);
-        });
+                const userId = req.session?.userId;
+                const photoObj = photo.toObject();
+                photoObj.hasVoted = userId ? photo.votedBy.map(id => id.toString()).includes(userId) : false;
+
+                return res.json(photoObj);
+            });
     },
 
     /**
@@ -138,39 +144,85 @@ module.exports = {
         return res.render('photo/publish');
     },
 
-    likePhoto: async function (req, res) {
-        const photo = await Photo.findById(req.params.photoId);
+    vote: function (req, res) {
+        const { id, voteType } = req.params;
+        const userId = req.session.userId;
 
-        // Če je že všečkal, ne dovoli ponovnega lajka
-        if (photo.likedBy.includes(req.user._id)) {
-            return res.status(400).json({message: 'Already liked'});
-        }
+        PhotoModel.findById(id)
+            .then(photo => {
+                if (!photo) {
+                    return res.status(404).json({ message: "Photo not found." });
+                }
 
-        // Odstrani iz dislajkov, če obstaja
-        photo.dislikedBy.pull(req.user._id);
+                if (photo.votedBy.includes(userId)) {
+                    return res.status(400).json({ message: "User already voted." });
+                }
 
-        // Dodaj v lajke
-        photo.likedBy.push(req.user._id);
-        await photo.save();
+                if (voteType === 'like') {
+                    photo.likes = (photo.likes || 0) + 1;
+                } else if (voteType === 'dislike') {
+                    photo.dislikes = (photo.dislikes || 0) + 1;
+                } else {
+                    return res.status(400).json({ message: "Invalid vote type." });
+                }
 
-        res.json(photo);
+                photo.votedBy.push(userId);
+
+                return photo.save().then(() => {
+                    res.json({
+                        likes: photo.likes,
+                        dislikes: photo.dislikes
+                    });
+                });
+            })
+            .catch(err => {
+                res.status(500).json({ message: "Error processing vote", error: err.message });
+            });
     },
-    dislikePhoto: async function (req, res) {
-        const photo = await Photo.findById(req.params.photoId);
+    report: function (req, res) {
+        const photoId = req.params.id;
+        const userId = req.session.userId;
 
-        // Če je že všečkal, ne dovoli ponovnega lajka
-        if (photo.likedBy.includes(req.user._id)) {
-            return res.status(400).json({message: 'Already disliked'});
-        }
+        PhotoModel.findById(photoId, function (err, photo) {
+            if (err || !photo) return res.status(404).json({ message: "Photo not found" });
 
-        // Odstrani iz dislajkov, če obstaja
-        photo.likedBy.pull(req.user._id);
+            if (photo.reportedBy.includes(userId)) {
+                return res.status(400).json({ message: "Already reported" });
+            }
 
-        // Dodaj v lajke
-        photo.dislikedBy.push(req.user._id);
-        await photo.save();
-        res.json(photo);
+            photo.reports += 1;
+            photo.reportedBy.push(userId);
+
+            photo.save(function (err, updated) {
+                if (err) return res.status(500).json({ message: "Error reporting photo", error: err });
+
+                res.json({ message: "Photo reported" });
+            });
+        });
+    },
+
+    sortedByScore: function (req, res, next) {
+        PhotoModel.find()
+            .then(photos => {
+                const MAX_REPORTS = 5;
+                const sorted = photos
+                    .map(photo => {
+                        const score = decayScore(photo.likes || 0, photo.date);
+                        console.log(`Photo: ${photo._id}, Likes: ${photo.likes}, Date: ${photo.date}, Score: ${score}`);
+                        return {
+                            ...photo.toObject(),
+                            score
+                        };
+                    })
+                    .sort((a, b) => b.score - a.score)
+                    .filter(photo => (photo.reports || 0) < MAX_REPORTS);
+
+                res.json(sorted);
+            })
+            .catch(err => {
+                console.error("Napaka v sortedByScore:", err);
+                next(err);
+            });
     }
-
 
 };

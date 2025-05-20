@@ -5,7 +5,8 @@ var Schema   = mongoose.Schema;
 var userSchema = new Schema({
 	'username' : String,
 	'password' : String,
-	'email' : String
+	'email' : String,
+	'avatarPath': { type: String, default: '/images/default-avatar.png' }
 });
 
 userSchema.pre('save', function(next){

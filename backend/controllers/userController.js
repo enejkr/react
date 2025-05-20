@@ -93,7 +93,7 @@ module.exports = {
             user.username = req.body.username ? req.body.username : user.username;
 			user.password = req.body.password ? req.body.password : user.password;
 			user.email = req.body.email ? req.body.email : user.email;
-			
+
             user.save(function (err, user) {
                 if (err) {
                     return res.status(500).json({
@@ -161,7 +161,7 @@ module.exports = {
                     return res.json(user);
                 }
             }
-        });  
+        });
     },
 
     logout: function(req, res, next){
@@ -175,5 +175,5 @@ module.exports = {
                 }
             });
         }
-    }
+    },
 };

@@ -15,14 +15,19 @@ function requiresLogin(req, res, next) {
         return next(err);
     }
 }
+router.get('/sorted', photoController.sortedByScore);
 
 router.get('/', photoController.list);
 //router.get('/publish', requiresLogin, photoController.publish);
 router.get('/:id', photoController.show);
 
+router.post('/:id/:voteType', requiresLogin, photoController.vote);
+
+router.post('/:id/report', requiresLogin, photoController.report);
+
+
+
 router.post('/', requiresLogin, upload.single('image'), photoController.create);
-router.post('/:id/dislike', requiresLogin, photoController.dislikePhoto);
-router.post('/:id/like', requiresLogin, photoController.likePhoto);
 
 router.put('/:id', photoController.update);
 

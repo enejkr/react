@@ -8,6 +8,8 @@ import Register from "./components/Register";
 import Profile from "./components/Profile";
 import Logout from "./components/Logout";
 import AddPhoto from "./components/AddPhoto";
+import PhotoDetails from "./components/PhotoDetails";
+import SortedPhotos from "./components/SortedPhotos";
 
 function App() {
   /**
@@ -53,6 +55,9 @@ function App() {
             <Route path="/publish" element={<AddPhoto />}></Route>
             <Route path="/profile" element={<Profile />}></Route>
             <Route path="/logout" element={<Logout />}></Route>
+            <Route path="/photo/:id" element={<PhotoDetails />}></Route>
+            <Route path="/sorted" element={<SortedPhotos />}></Route>
+
           </Routes>
         </div>
       </UserContext.Provider>

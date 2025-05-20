@@ -2,19 +2,22 @@ var mongoose = require('mongoose');
 var Schema   = mongoose.Schema;
 
 var photoSchema = new Schema({
-	'name' : String,
-	'description' : String,
-	'path' : String,
-	'postedBy' : {
-	 	type: Schema.Types.ObjectId,
-	 	ref: 'user'
+	'name': String,
+	'message': String,
+	'path': String,
+	'postedBy': {
+		type: Schema.Types.ObjectId,
+		ref: 'user'
 	},
-	'views' : Number,
-	'likedBy': [{
+	'likes': { type: Number, default: 0 },
+	'dislikes': { type: Number, default: 0 },
+	'votedBy': [{
 		type: Schema.Types.ObjectId,
 		ref: 'user'
 	}],
-	'dislikedBy': [{
+	'date': { type: Date, default: Date.now },
+	'reports': { type: Number, default: 0 },
+	'reportedBy': [{
 		type: Schema.Types.ObjectId,
 		ref: 'user'
 	}]
