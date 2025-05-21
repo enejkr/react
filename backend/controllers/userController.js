@@ -1,5 +1,6 @@
 var UserModel = require('../models/userModel.js');
-
+var CommentModel = require('../models/commentModel.js');
+var PhotoModel = require('../models/photoModel.js');
 /**
  * userController.js
  *
@@ -54,7 +55,8 @@ module.exports = {
         var user = new UserModel({
 			username : req.body.username,
 			password : req.body.password,
-			email : req.body.email
+			email : req.body.email,
+            path: "/images/default-avatar.png"
         });
 
         user.save(function (err, user) {
@@ -146,22 +148,30 @@ module.exports = {
         });
     },
 
-    profile: function(req, res,next){
-        UserModel.findById(req.session.userId)
-        .exec(function(error, user){
-            if(error){
-                return next(error);
-            } else{
-                if(user===null){
-                    var err = new Error('Not authorized, go back!');
-                    err.status = 400;
-                    return next(err);
-                } else{
-                    //return res.render('user/profile', user);
-                    return res.json(user);
-                }
+    profile: async function (req, res, next) {
+        try {
+            const user = await UserModel.findById(req.session.userId);
+            if (!user) {
+                return res.status(404).json({ message: 'Not authorized, go back!' });
             }
-        });
+
+            const photos = await PhotoModel.find({ postedBy: user._id });
+            const totalLikes = photos.reduce((acc, photo) => acc + (photo.likes || 0), 0);
+
+            const commentCount = await CommentModel.countDocuments({ author: user._id });
+
+            res.json({
+                _id: user._id,
+                username: user.username,
+                email: user.email,
+                avatarPath: user.avatarPath || null,
+                photoCount: photos.length,
+                totalLikes: totalLikes,
+                commentCount: commentCount
+            });
+        } catch (err) {
+            next(err);
+        }
     },
 
     logout: function(req, res, next){
@@ -176,4 +186,21 @@ module.exports = {
             });
         }
     },
+
+    uploadAvatar: function (req, res) {
+        if (!req.file) {
+            return res.status(400).json({ message: 'No file uploaded' });
+        }
+
+        UserModel.findByIdAndUpdate(
+            req.session.userId,
+            { avatarPath: req.file.path.replace(/^public[\\/]/, "") },
+            { new: true },
+            function (err, user) {
+                if (err) return res.status(500).json({ message: 'Upload error', error: err });
+                res.json({ avatarPath: user.avatarPath });
+            }
+        );
+    }
+
 };

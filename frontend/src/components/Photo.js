@@ -7,6 +7,7 @@ function Photo(props) {
     const [dislikes, setDislikes] = useState(props.photo.dislikes || 0);
     const [hasVoted, setHasVoted] = useState(props.photo.hasVoted || false);
     const [hasReported, setHasReported] = useState(props.photo.reportedBy?.includes(user?._id));
+    const [votedType, setVotedType] = useState(null);
 
     const [comments, setComments] = useState([]);
     const [newComment, setNewComment] = useState("");
@@ -36,7 +37,9 @@ function Photo(props) {
             setLikes(data.likes);
             setDislikes(data.dislikes);
             setHasVoted(true);
-        } else {
+            setVotedType(type); // "like" ali "dislike"
+        }
+        else {
             alert(data.message);
         }
     };
@@ -86,23 +89,41 @@ function Photo(props) {
             </div>
 
             <div className="card-footer text-white">
-                {user && !hasVoted ? (
+                {user ? (
                     <>
-                        <button onClick={() => vote('like')} className="btn btn-success me-2">👍 {likes}</button>
-                        <button onClick={() => vote('dislike')} className="btn btn-danger">👎 {dislikes}</button>
+                        <button
+                            onClick={() => vote('like')}
+                            className={`btn me-2 ${
+                                hasVoted
+                                    ? votedType === 'like'
+                                        ? 'btn-success'
+                                        : 'btn-outline-secondary'
+                                    : 'btn-outline-success'
+                            }`}
+                            disabled={hasVoted}
+                        >
+                            👍 {likes}
+                        </button>
+                        <button
+                            onClick={() => vote('dislike')}
+                            className={`btn ${
+                                hasVoted
+                                    ? votedType === 'dislike'
+                                        ? 'btn-danger'
+                                        : 'btn-outline-secondary'
+                                    : 'btn-outline-danger'
+                            }`}
+                            disabled={hasVoted}
+                        >
+                            👎 {dislikes}
+                        </button>
                     </>
                 ) : (
                     <p>{likes} 👍 | {dislikes} 👎</p>
                 )}
-
-                {user && !hasReported && (
-                    <button onClick={() => reportPhoto} className="btn btn-warning mt-3">Prijavi neprimerno</button>
-                )}
-                {user && hasReported && (
-                    <p className="text-warning mt-3 text-white">Slika je že prijavljena.</p>
-                )}
-
             </div>
+
+
 
             <div className="card-body">
                 <h6>Komentarji:</h6>
