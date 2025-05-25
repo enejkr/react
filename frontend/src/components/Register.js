@@ -107,7 +107,7 @@ function Register() {
 
                     <div className="flex justify-center">
                         <ReCAPTCHA
-                            sitekey="6Lcs2y4rAAAAAP-VkZsfX2RomonLOAnGfg1be-4y"
+                            sitekey="6Lf0y0grAAAAAInpS6_d1sVtipLfYueLCKf0MX8d"
                             onChange={(token) => setCaptchaToken(token)}
                         />
                     </div>

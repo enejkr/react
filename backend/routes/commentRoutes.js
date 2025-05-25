@@ -12,10 +12,8 @@ function requiresLogin(req, res, next){
     }
 }
 
-// GET comments for photo
 router.get('/photo/:photoId', commentController.list);
 
-// POST new comment for photo
 router.post('/photo/:photoId', requiresLogin, commentController.create);
 
 module.exports = router;

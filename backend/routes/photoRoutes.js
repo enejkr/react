@@ -19,12 +19,8 @@ function requiresLogin(req, res, next){
 router.get('/sorted', photoController.sorted);
 
 router.get('/', photoController.list);
-//router.get('/publish', requiresLogin, photoController.publish);
+
 router.get('/:id', photoController.show);
-
-// router.post('/:id/like', requiresLogin, photoController.like);
-
-// router.post('/:id/dislike', requiresLogin, photoController.dislike);
 
 router.post('/:id/report', requiresLogin, photoController.report);
 
