@@ -8,8 +8,8 @@ import Register from "./components/Register";
 import Profile from "./components/Profile";
 import Logout from "./components/Logout";
 import AddPhoto from "./components/AddPhoto";
-import PhotoDetails from "./components/PhotoDetails";
-import SortedPhotos from "./components/SortedPhotos";
+import Photo from './components/Photo';
+import SortedPhotos from './components/SortedPhotos';
 
 function App() {
   /**
@@ -47,7 +47,7 @@ function App() {
         setUserContext: updateUserData
       }}>
         <div className="App">
-          <Header title="My application"></Header>
+          <Header title="TopBook"></Header>
           <Routes>
             <Route path="/" exact element={<Photos />}></Route>
             <Route path="/login" exact element={<Login />}></Route>
@@ -55,9 +55,8 @@ function App() {
             <Route path="/publish" element={<AddPhoto />}></Route>
             <Route path="/profile" element={<Profile />}></Route>
             <Route path="/logout" element={<Logout />}></Route>
-            <Route path="/photo/:id" element={<PhotoDetails />}></Route>
+            <Route path="/photo/:id" element={<Photo />}></Route>
             <Route path="/sorted" element={<SortedPhotos />}></Route>
-
           </Routes>
         </div>
       </UserContext.Provider>

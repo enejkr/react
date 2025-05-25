@@ -1,5 +1,5 @@
 var mongoose = require('mongoose');
-var Schema   = mongoose.Schema;
+var Schema = mongoose.Schema;
 
 var photoSchema = new Schema({
 	'name': String,
@@ -21,7 +21,6 @@ var photoSchema = new Schema({
 		type: Schema.Types.ObjectId,
 		ref: 'user'
 	}]
-
 });
 
 module.exports = mongoose.model('photo', photoSchema);

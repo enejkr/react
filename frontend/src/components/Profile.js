@@ -2,20 +2,20 @@ import { useContext, useEffect, useState } from 'react';
 import { UserContext } from '../userContext';
 import { Navigate } from 'react-router-dom';
 
-function Profile(){
-    const userContext = useContext(UserContext); 
+function Profile() {
+    const userContext = useContext(UserContext);
     const [profile, setProfile] = useState({});
     const [avatarFile, setAvatarFile] = useState(null);
 
-
-    useEffect(function(){
-        const getProfile = async function(){
-            const res = await fetch("http://localhost:3001/users/profile", {credentials: "include"});
+    useEffect(() => {
+        const getProfile = async () => {
+            const res = await fetch("http://localhost:3001/users/profile", { credentials: "include" });
             const data = await res.json();
             setProfile(data);
-        }
+        };
         getProfile();
     }, []);
+
     const handleAvatarUpload = async (e) => {
         e.preventDefault();
         if (!avatarFile) return;
@@ -38,9 +38,12 @@ function Profile(){
     if (!userContext.user) {
         return <Navigate replace to="/login" />;
     }
+
     return (
-        <div >
-            <h1 >Profil uporabnika</h1>
+        <div className="min-h-screen bg-gray-900 flex items-center justify-center p-6">
+
+        <div className="container mx-auto p-6 bg-gray-800 text-white rounded-lg shadow-md">
+            <h1 className="text-3xl font-semibold text-center mb-6">Profil uporabnika</h1>
 
             <div className="flex justify-center mb-6">
                 {profile.avatarPath ? (
@@ -78,6 +81,8 @@ function Profile(){
                 </div>
             </form>
         </div>
+        </div>
     );
 }
+
 export default Profile;

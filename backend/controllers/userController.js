@@ -1,6 +1,8 @@
 var UserModel = require('../models/userModel.js');
-var CommentModel = require('../models/commentModel.js');
-var PhotoModel = require('../models/photoModel.js');
+const PhotoModel = require('../models/photoModel');
+const CommentModel = require('../models/commentModel');
+const axios = require('axios');
+
 /**
  * userController.js
  *
@@ -30,7 +32,7 @@ module.exports = {
     show: function (req, res) {
         var id = req.params.id;
 
-        UserModel.findOne({_id: id}, function (err, user) {
+        UserModel.findOne({ _id: id }, function (err, user) {
             if (err) {
                 return res.status(500).json({
                     message: 'Error when getting user.',
@@ -52,23 +54,41 @@ module.exports = {
      * userController.create()
      */
     create: function (req, res) {
-        var user = new UserModel({
-			username : req.body.username,
-			password : req.body.password,
-			email : req.body.email,
-            path: "/images/default-avatar.png"
-        });
+        const { username, password, email, captchaToken } = req.body;
 
-        user.save(function (err, user) {
-            if (err) {
-                return res.status(500).json({
-                    message: 'Error when creating user',
-                    error: err
-                });
+        axios.post('https://www.google.com/recaptcha/api/siteverify', null, {
+            params: {
+                secret: process.env.RECAPTCHA_SECRET_KEY,
+                response: captchaToken,
+            }
+        })
+        .then(captchaRes => {
+            if (!captchaRes.data.success) {
+                return res.status(400).json({ message: "CAPTCHA preverjanje ni uspelo." });
             }
 
-            return res.status(201).json(user);
-            //return res.redirect('/users/login');
+            const user = new UserModel({
+                username,
+                password,
+                email,
+            });
+
+            user.save(function (err, savedUser) {
+                if (err) {
+                    return res.status(500).json({
+                        message: 'Napaka pri ustvarjanju uporabnika',
+                        error: err,
+                    });
+                }
+
+                return res.status(201).json(savedUser);
+            });
+        })
+        .catch(err => {
+            return res.status(500).json({
+                message: "Napaka pri preverjanju CAPTCHA.",
+                error: err,
+            });
         });
     },
 
@@ -78,7 +98,7 @@ module.exports = {
     update: function (req, res) {
         var id = req.params.id;
 
-        UserModel.findOne({_id: id}, function (err, user) {
+        UserModel.findOne({ _id: id }, function (err, user) {
             if (err) {
                 return res.status(500).json({
                     message: 'Error when getting user',
@@ -93,8 +113,8 @@ module.exports = {
             }
 
             user.username = req.body.username ? req.body.username : user.username;
-			user.password = req.body.password ? req.body.password : user.password;
-			user.email = req.body.email ? req.body.email : user.email;
+            user.password = req.body.password ? req.body.password : user.password;
+            user.email = req.body.email ? req.body.email : user.email;
 
             user.save(function (err, user) {
                 if (err) {
@@ -127,17 +147,17 @@ module.exports = {
         });
     },
 
-    showRegister: function(req, res){
+    showRegister: function (req, res) {
         res.render('user/register');
     },
 
-    showLogin: function(req, res){
+    showLogin: function (req, res) {
         res.render('user/login');
     },
 
-    login: function(req, res, next){
-        UserModel.authenticate(req.body.username, req.body.password, function(err, user){
-            if(err || !user){
+    login: function (req, res, next) {
+        UserModel.authenticate(req.body.username, req.body.password, function (err, user) {
+            if (err || !user) {
                 var err = new Error('Wrong username or paassword');
                 err.status = 401;
                 return next(err);
@@ -174,18 +194,20 @@ module.exports = {
         }
     },
 
-    logout: function(req, res, next){
-        if(req.session){
-            req.session.destroy(function(err){
-                if(err){
+    logout: function (req, res, next) {
+        if (req.session) {
+            req.session.destroy(function (err) {
+                if (err) {
                     return next(err);
-                } else{
+                } else {
                     //return res.redirect('/');
                     return res.status(201).json({});
                 }
             });
         }
     },
+
+
 
     uploadAvatar: function (req, res) {
         if (!req.file) {
@@ -202,5 +224,4 @@ module.exports = {
             }
         );
     }
-
 };

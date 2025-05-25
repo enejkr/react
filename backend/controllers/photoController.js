@@ -1,5 +1,10 @@
 var PhotoModel = require('../models/photoModel.js');
 
+function decayScore(votes, timestamp) {
+    const ageInHours = (Date.now() - new Date(timestamp)) / (1000 * 60 * 60);
+    return votes / Math.pow((ageInHours + 2), 1.5);
+}
+
 /**
  * photoController.js
  *
@@ -20,12 +25,22 @@ module.exports = {
                         error: err
                     });
                 }
-                var data = [];
-                data.photos = photos;
-                //return res.render('photo/list', data);
-                return res.json(photos);
+
+                const userId = req.session?.userId;
+                const MAX_REPORTS = 5;
+
+                const modifiedPhotos = photos
+                    .filter(photo => (photo.reports || 0) < MAX_REPORTS)
+                    .map(photo => {
+                        const photoObj = photo.toObject();
+                        photoObj.hasVoted = userId ? photo.votedBy.map(id => id.toString()).includes(userId) : false;
+                        return photoObj;
+                    });
+
+                return res.json(modifiedPhotos);
             });
     },
+
 
     /**
      * photoController.show()
@@ -63,9 +78,9 @@ module.exports = {
     create: function (req, res) {
         var photo = new PhotoModel({
             name: req.body.name,
-            description: req.body.description,
             path: "/images/" + req.file.filename,
             postedBy: req.session.userId,
+            message: req.body.message,
             views: 0,
             likes: 0
         });
@@ -89,7 +104,7 @@ module.exports = {
     update: function (req, res) {
         var id = req.params.id;
 
-        PhotoModel.findOne({_id: id}, function (err, photo) {
+        PhotoModel.findOne({ _id: id }, function (err, photo) {
             if (err) {
                 return res.status(500).json({
                     message: 'Error when getting photo',
@@ -143,21 +158,23 @@ module.exports = {
     publish: function (req, res) {
         return res.render('photo/publish');
     },
-
-    vote: function (req, res) {
+    /**
+     * photoController.votes()
+     */
+    votes: function (req, res) {
         const { id, voteType } = req.params;
         const userId = req.session.userId;
-
+    
         PhotoModel.findById(id)
             .then(photo => {
                 if (!photo) {
                     return res.status(404).json({ message: "Photo not found." });
                 }
-
+    
                 if (photo.votedBy.includes(userId)) {
                     return res.status(400).json({ message: "User already voted." });
                 }
-
+    
                 if (voteType === 'like') {
                     photo.likes = (photo.likes || 0) + 1;
                 } else if (voteType === 'dislike') {
@@ -165,9 +182,9 @@ module.exports = {
                 } else {
                     return res.status(400).json({ message: "Invalid vote type." });
                 }
-
+    
                 photo.votedBy.push(userId);
-
+    
                 return photo.save().then(() => {
                     res.json({
                         likes: photo.likes,
@@ -178,7 +195,8 @@ module.exports = {
             .catch(err => {
                 res.status(500).json({ message: "Error processing vote", error: err.message });
             });
-    },
+    },    
+
     report: function (req, res) {
         const photoId = req.params.id;
         const userId = req.session.userId;
@@ -200,8 +218,10 @@ module.exports = {
             });
         });
     },
-
-    sortedByScore: function (req, res, next) {
+    /**
+     * photoController.sorted()
+     */
+    sorted: function (req, res, next) {
         PhotoModel.find()
             .then(photos => {
                 const MAX_REPORTS = 5;
@@ -224,5 +244,4 @@ module.exports = {
                 next(err);
             });
     }
-
 };
